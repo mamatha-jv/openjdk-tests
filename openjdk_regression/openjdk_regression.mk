@@ -31,8 +31,8 @@ JTREG_BASIC_OPTIONS += -a
 # Always turn on assertions
 JTREG_ASSERT_OPTION = -ea -esa
 JTREG_BASIC_OPTIONS += $(JTREG_ASSERT_OPTION)
-# Report details on all failed or error tests, times too
-JTREG_BASIC_OPTIONS += -v:fail,error,time
+# Report details on all failed or error tests, times, and suppress output for tests that passed
+JTREG_BASIC_OPTIONS += -v:fail,error,time,nopass
 # Retain all files for failing tests
 JTREG_BASIC_OPTIONS += -retain:fail,error
 # Ignore tests are not run and completely silent about it
@@ -47,6 +47,15 @@ JTREG_BASIC_OPTIONS += $(JTREG_XML_OPTION)
 # Add any extra options
 JTREG_BASIC_OPTIONS += $(EXTRA_JTREG_OPTIONS)
 
+ifndef JRE_IMAGE
+	ifeq ($(JAVA_VERSION),SE80)
+		JRE_ROOT := $(JAVA_BIN)$(D)..$(D)..
+	else
+		JRE_ROOT := $(JAVA_BIN)$(D)..
+	endif
+	JRE_IMAGE := $(JRE_ROOT)$(D)..$(D)j2jre-image
+endif
+
 ifdef OPENJDK_DIR 
 # removing "
 OPENJDK_DIR := $(subst ",,$(OPENJDK_DIR))
@@ -57,11 +66,12 @@ endif
 ifneq (,$(findstring $(JAVA_VERSION),SE80-SE90))
 	JTREG_TEST_DIR := $(OPENJDK_DIR)$(D)jdk$(D)test
 	JTREG_HOTSPOT_TEST_DIR := $(OPENJDK_DIR)$(D)hotspot$(D)test
+	JTREG_LANGTOOLS_TEST_DIR := $(OPENJDK_DIR)$(D)langtools$(D)test
 else
 	JTREG_TEST_DIR := $(OPENJDK_DIR)$(D)test$(D)jdk
 	JTREG_HOTSPOT_TEST_DIR := $(OPENJDK_DIR)$(D)test$(D)hotspot
+	JTREG_LANGTOOLS_TEST_DIR := $(OPENJDK_DIR)$(D)test$(D)langtools
 endif
 
-ifndef CUSTOM_TARGET
-	CUSTOM_TARGET := java/math/BigInteger/BigIntegerTest.java
-endif
+JDK_CUSTOM_TARGET ?= java/math/BigInteger/BigIntegerTest.java
+LANGTOOLS_CUSTOM_TARGET ?= tools/javac/declaration/method/MethodVoidParameter.java

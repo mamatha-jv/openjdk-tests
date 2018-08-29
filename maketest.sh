@@ -25,6 +25,8 @@ if [ "$#" -eq 1 ];then
 	fi
 	$MAKE compile
 else
-	$MAKE -C $1 -f autoGen.mk $2
+	testDir=$1
+	shift
+	$MAKE -C $testDir -f autoGen.mk $@
 fi
 

@@ -4,12 +4,12 @@ pipeline {
 	parameters {
 		string (defaultValue: "https://github.com/AdoptOpenJDK/openjdk-tests.git", description: 'personal repo from AdoptOpenJDK/openjdk-tests', name: 'ADOPTOPENJDK_REPO')
 		string (defaultValue: "master", description: 'personal AdoptOpenJDK branch', name: 'ADOPTOPENJDK_BRANCH')
-		choice (choices: 'linux_x86-64\nlinux_x86-64_cmprssptrs\nmac_x86-64\nlinux_390-64\nlinux_390-64_cmprssptrs\nlinux_ppc-64_le\nlinux_ppc-64_cmprssptrs_le\nlinux_arm\nwin_x86-64\nwin_x86-64_cmprssptrs\naix_ppc-64\naix_ppc-64_cmprssptrs', description: 'SPEC?', name: 'SPEC')
-		choice (choices: 'SE80\nSE90\nSE100', description: 'What is JAVA_VERSION?', name: 'JAVA_VERSION')
+		string (defaultValue: "linux_x86-64_cmprssptrs", description: 'Set SPEC to match SDK. e.g., <br/>linux_x86-64<br/>linux_x86-64_cmprssptrs<br/>mac_x86-64<br/>linux_390-64<br/>linux_390-64_cmprssptrs<br/>linux_ppc-64_le<br/>linux_ppc-64_cmprssptrs_le<br/>linux_arm<br/>win_x86<br/>win_x86-64<br/>win_x86-64_cmprssptrs<br/>aix_ppc-64<br/>aix_ppc-64_cmprssptrs<br/>zos_390-64_cmprssptrs', name: 'SPEC')
+		string (defaultValue: "SE80", description: 'Set JAVA_VERSION to match SDK. Format SEXXX. e.g., SE80 SE90 SE100 SE110', name: 'JAVA_VERSION')
 		string (defaultValue: 'openj9', description: 'JAVA_IMPL, e.g. hotspot, openj9, sap', name: 'JAVA_IMPL')
-		string (defaultValue: 'openjdk_regression', description: 'Equivalent to BUILD_LIST, specific test directory to compile, set blank for all projects to be compiled, e.g. openjdk_regression systemtest performance jck thirdparty_containers functional', name: 'TESTPROJECT')
+		string (defaultValue: 'functional', description: 'Specific test directory to compile, set blank for all projects to be compiled, e.g. openjdk_regression systemtest performance jck thirdparty_containers functional', name: 'BUILD_LIST')
 		string (defaultValue: 'sanity', description: 'Test TARGET to execute, default is runtest which will run all tests. You can also select sub-targets such as:\ndifferent group: openjdk, system, jck, functional, perf, etc\ndifferent level: sanity, extended\nindividual test: jdk_beans_0, jdk_custom, etc', name: 'TARGET')
-		string (defaultValue: "", description: 'Used when jdk_custom or jck-custom test targets are selected, path to the test class to execute', name: 'CUSTOM_TARGET')
+		string (defaultValue: "", description: 'Used when any custom target is selected, e.g. jdk_custom, langtools_custom, etc. , path to the test class to execute', name: 'CUSTOM_TARGET')
 		choice (choices: 'customized\nnightly\nreleases', description: 'Where is sdk? nightly & releases pull the lastest from AdoptOpenJDK', name: 'SDK_RESOURCE')
 		string (defaultValue: "", description: 'Customized SDK URL, only set when SDK_RESOURCE customized', name: 'CUSTOMIZED_SDK_URL')
 		string (defaultValue: "", description: 'Use this to append options to the commandline', name: 'EXTRA_OPTIONS')
@@ -21,21 +21,18 @@ pipeline {
 	}
 	options {
     	skipDefaultCheckout true
-    	timeout(time: 6, unit: 'HOURS')
+    	timeout(time: 8, unit: 'HOURS')
   	}
 	environment {
-		OPENJDK_TEST="$WORKSPACE/openjdk-tests"
 		JAVA_HOME="$WORKSPACE/openjdkbinary/j2sdk-image/${(JAVA_VERSION == 'SE80') ? 'jre/' : ''}"
 		JAVA_BIN="$WORKSPACE/openjdkbinary/j2sdk-image/${(JAVA_VERSION == 'SE80') ? 'jre/' : ''}bin"
 		SPEC="${SPEC}"
 		JAVA_VERSION="${JAVA_VERSION}"
-		BUILD_LIST="${TESTPROJECT}"
-		JVM_VERSION="${getJVM_VERSION(JAVA_IMPL, JAVA_VERSION)}"
+		BUILD_LIST="${BUILD_LIST}"
 		JAVA_IMPL="${JAVA_IMPL}"
 		DIAGNOSTICLEVEL ='failure'
 		EXTRA_OPTIONS="${EXTRA_OPTIONS}"
 		JVM_OPTIONS="${JVM_OPTIONS}"
-		CUSTOM_TARGET="${CUSTOM_TARGET}"
 		ITERATIONS="${ITERATIONS}"
 		NODE_LABEL="${NODE_LABEL}"
     }
@@ -50,18 +47,12 @@ pipeline {
 				        extensions: [[$class:'CloneOption', shallow:true, depth:1],[$class: 'CleanBeforeCheckout'],[$class: 'RelativeTargetDirectory', relativeTargetDir: 'openjdk-tests']],
 			        	userRemoteConfigs: [[url: "${params.ADOPTOPENJDK_REPO}"]]
 			        ])
-			        sh 'chmod 755 $OPENJDK_TEST/maketest.sh'
-                	sh 'chmod 755 $OPENJDK_TEST/get.sh'
 
 					script {
-						CUSTOMIZED_SDK_URL_OPTION = (params.CUSTOMIZED_SDK_URL != "") ? "-c $CUSTOMIZED_SDK_URL" : ""
+						CUSTOMIZED_SDK_URL_OPTION = (params.CUSTOMIZED_SDK_URL != "") ? "-c '$CUSTOMIZED_SDK_URL'" : ""
 						OPENJ9_REPO_OPTION = (params.OPENJ9_REPO) ? "--openj9_repo ${params.OPENJ9_REPO}" : "--openj9_repo https://github.com/eclipse/openj9.git"
 						OPENJ9_BRANCH_OPTION = (params.OPENJ9_BRANCH) ? "--openj9_branch ${params.OPENJ9_BRANCH}" : ""
-                		if ( SPEC.contains('win') ) {
-                			bat "$OPENJDK_TEST/get.bat -sdkdir $WORKSPACE -testdir $OPENJDK_TEST -platform ${getPlatformAndLabel(SPEC)[0]} -jvmversion ${JVM_VERSION} -sdk_resource ${params.SDK_RESOURCE} -customizedURL ${params.CUSTOMIZED_SDK_URL}"
-                		} else {
-							sh "$OPENJDK_TEST/get.sh -s $WORKSPACE -t $OPENJDK_TEST -p ${getPlatformAndLabel(SPEC)[0]} -v ${JVM_VERSION} -r ${params.SDK_RESOURCE} ${CUSTOMIZED_SDK_URL_OPTION} ${OPENJ9_REPO_OPTION} ${OPENJ9_BRANCH_OPTION}"
-						}
+						sh "./openjdk-tests/get.sh -s `pwd` -t `pwd`/openjdk-tests -p ${getPlatformAndLabel(SPEC)[0]} -j ${JAVA_VERSION} -i ${JAVA_IMPL} -r ${params.SDK_RESOURCE} ${CUSTOMIZED_SDK_URL_OPTION} ${OPENJ9_REPO_OPTION} ${OPENJ9_BRANCH_OPTION}"
 					}
                 }
             }
@@ -71,16 +62,7 @@ pipeline {
 				timestamps{
                 	echo 'Building tests...'
                 	script {
-	                	if (JAVA_VERSION == 'SE80') {
-							sh 'chmod 755 ${JAVA_BIN}/java'
-							sh 'chmod 755 ${JAVA_BIN}/../../bin/javac'
-							sh 'chmod 755 ${JAVA_BIN}/../../bin/java'
-						}
-						if ( SPEC.contains('win') ) {
-							bat "$OPENJDK_TEST/maketest.bat $OPENJDK_TEST"
-						} else {
-							sh '$OPENJDK_TEST/maketest.sh $OPENJDK_TEST'
-						}
+						sh './openjdk-tests/maketest.sh ./openjdk-tests'
 					}
                 }
             }
@@ -97,12 +79,12 @@ pipeline {
 					withEnv(["DIAGNOSTICLEVEL=${DIAGNOSTICLEVEL}"]) {
 						script {
 							int iterations = "${ITERATIONS}".toInteger()
+							def CUSTOM_OPTION = ''
+							if (TARGET.contains('custom')) {
+								CUSTOM_OPTION = "${TARGET.toUpperCase()}_TARGET='${CUSTOM_TARGET}'"
+							}
 							for (i = 0; i < iterations; i++) {
-								if ( SPEC.contains('win') ) {
-									bat "$OPENJDK_TEST/maketest.bat $OPENJDK_TEST _${params.TARGET}"
-								} else {
-									sh "$OPENJDK_TEST/maketest.sh $OPENJDK_TEST _${params.TARGET}"
-								}
+								sh "./openjdk-tests/maketest.sh ./openjdk-tests _${params.TARGET} ${CUSTOM_OPTION}"
 							}
                 		}
 					}
@@ -112,7 +94,7 @@ pipeline {
     }
     post {
     	always {
-			step([$class: "TapPublisher", testResults: "**/*.tap"])
+			step([$class: "TapPublisher", testResults: "**/*.tap", outputTapToConsole: false])
 			junit allowEmptyResults: true, keepLongStdio: true, testResults: '**/work/**/*.jtr.xml, **/junitreports/**/*.xml'
 			
 		}
@@ -121,21 +103,12 @@ pipeline {
 			archiveArtifacts artifacts: '**/work/**/*.jtr, **/junitreports/**/*.xml', fingerprint: true, allowEmptyArchive: true
 			 script {
             	if (params.TARGET == 'systemtest') {  
-	       	 		sh 'tar -zcf openjdk-systemtest-results.tar.gz $WORKSPACE/openjdk-tests/TestConfig/test_output_*'
+	       	 		sh 'tar -zcf openjdk-systemtest-results.tar.gz ./openjdk-tests/TestConfig/test_output_*'
 	       	 		archiveArtifacts artifacts: '**/openjdk-systemtest-results.tar.gz', fingerprint: true, allowEmptyArchive: true
 		    	}
 	    	}
 		}
  	}
-    
-}
-
-def getJVM_VERSION(JAVA_IMPL, JAVA_VERSION) {
-	def jvm_version = "openjdk${JAVA_VERSION[2..-2]}"
-	if (JAVA_IMPL != 'hotspot') {
-		jvm_version = "$jvm_version-$JAVA_IMPL"
-	}
-	return jvm_version
 }
 
 def getPlatformAndLabel(SPEC) {
@@ -143,31 +116,39 @@ def getPlatformAndLabel(SPEC) {
 	switch (SPEC) {
 		case ~/linux_x86-64.*/:
 			platformAndLabel[0] = 'x64_linux'
-			platformAndLabel[1] = 'linux&&x64&&test||ci.project.openj9&&sw.os.linux&&hw.arch.x86'
+			platformAndLabel[1] = 'sw.os.linux&&hw.arch.x86'
 			break
 		case ~/mac_x86-64.*/:
 			platformAndLabel[0] = 'x64_mac'
-			platformAndLabel[1] = 'mac&&x64&&test'
+			platformAndLabel[1] = 'sw.os.osx&&hw.arch.x86'
 			break
 		case ~/linux_390-64.*/:
 			platformAndLabel[0] = 's390x_linux'
-			platformAndLabel[1] = 'linux&&s390x&&test||ci.project.openj9&&sw.os.linux&&hw.arch.s390'
+			platformAndLabel[1] = 'sw.os.linux&&hw.arch.s390x'
 			break
 		case ~/linux_ppc-64.*le/:
 			platformAndLabel[0] = 'ppc64le_linux'
-			platformAndLabel[1] = 'linux&&ppc64le&&test||ci.project.openj9&&sw.os.linux&&hw.arch.ppc'
+			platformAndLabel[1] = 'sw.os.linux&&hw.arch.ppc64le'
 			break
 		case ~/aix_ppc-64.*/:
 			platformAndLabel[0] = 'ppc64_aix'
-			platformAndLabel[1] = 'aix&&ppc64&&test||ci.project.openj9&&hw.arch.ppc&&sw.os.aix7.1'
+			platformAndLabel[1] = 'hw.arch.ppc&&sw.os.aix'
 			break
 		case ~/linux_arm.*/:
 			platformAndLabel[0] = 'aarch64_linux'
-			platformAndLabel[1] = 'linux&&arm64&&test'
+			platformAndLabel[1] = 'sw.os.linux&&hw.arch.aarch64'
 			break
 		case ~/win_x86-64.*/:
-			platformAndLabel[0] = 'x64_win'
-			platformAndLabel[1] = 'windows&&x64&&test||hw.arch.x86&&sw.os.win'
+			platformAndLabel[0] = 'x64_windows'
+			platformAndLabel[1] = 'hw.arch.x86&&sw.os.windows'
+			break
+		case ~/win_x86/:
+			platformAndLabel[0] = 'x64_windows'
+			platformAndLabel[1] = 'hw.arch.x86&&sw.os.windows'
+			break
+		case ~/zos_390-64.*/:
+			platformAndLabel[0] = 's390x_zos'
+			platformAndLabel[1] = 'hw.arch.s390x&&sw.os.zos'
 			break
 		default:
 			println 'not supported spec or wrong spec'
