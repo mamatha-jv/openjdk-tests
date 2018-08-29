@@ -46,11 +46,11 @@ cd /akka
 ls .
 pwd
 echo "Build akka by using sbt" && \
-sbt compile
+sbt "set logLevel := Level.Error" compile
 
 echo "Building akka completed"
 
 echo "Run akka test phase alone " && \
-sbt test
+sbt "set logLevel := Level.Error" test
 
 echo "Executing akka tests completed"
