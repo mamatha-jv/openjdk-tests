@@ -41,7 +41,9 @@ usage ()
 	echo '                [--type|-t ]: optional. jdk or jre'
 	echo '                [--sdkdir|-s binarySDKDIR] : if do not have a local sdk available, specify preferred directory'
 	echo '                [--sdk_resource|-r ] : indicate where to get sdk - releases, nightly , upstream or customized'
-	echo '                [--customizedURL|-c ] : indicate sdk url if sdk source is set as customized'
+	echo '                [--customizedURL|-c ] : indicate sdk url if sdk source is set as customized.  Multiple urls can be passed with space as separator'
+	echo '                [--username ] : indicate username required if customized url requiring authorization is used'
+	echo '                [--password ] : indicate password required if customized url requiring authorization is used'
 	echo '                [--openj9_repo ] : optional. OpenJ9 git repo. Default value https://github.com/eclipse/openj9.git is used if not provided'
 	echo '                [--openj9_sha ] : optional. OpenJ9 pull request sha.'
 	echo '                [--openj9_branch ] : optional. OpenJ9 branch.'
@@ -84,6 +86,12 @@ parseCommandLineArgs()
 			"--customizedURL" | "-c" )
 				CUSTOMIZED_SDK_URL="$1"; shift;;
 
+			"--username" )
+				USERNAME="$1"; shift;;
+
+			"--password" )
+				PASSWORD="$1"; shift;;
+
 			"--openj9_repo" )
 				OPENJ9_REPO="$1"; shift;;
 
@@ -122,7 +130,9 @@ getBinaryOpenjdk()
 	
 	if [ "$CUSTOMIZED_SDK_URL" != "" ]; then
 		download_url=$CUSTOMIZED_SDK_URL
-		if [ "$CUSTOMIZED_SDK_URL_CREDENTIAL_ID" != "" ]; then
+                # if these are passed through via withCredentials(CUSTOMIZED_SDK_URL_CREDENTIAL_ID) these will not be visible within job output,
+                # if supplied when run manually with --username and --password these will be seen in plaintext within job output
+		if [ "$USERNAME" != "" ] && [ "$PASSWORD" != "" ]; then
 			curl_options="--user $USERNAME:$PASSWORD"
 		fi
 	elif [ "$SDK_RESOURCE" == "nightly" ] || [ "$SDK_RESOURCE" == "releases" ]; then
@@ -139,16 +149,16 @@ getBinaryOpenjdk()
 	fi
 	
 	if  [ "${download_url}" != "" ]; then
-		echo "curl -OLJks ${curl_options} "${download_url}""
-		curl -OLJks ${curl_options} "${download_url}"
-		if [ $? -ne 0 ]; then
-			echo "Failed to retrieve the jdk binary, exiting"
-			exit 1
-		fi
+		for file in $download_url
+		do
+			echo "curl -OLJks ${curl_options} $file"
+			curl -OLJks ${curl_options} $file
+			if [ $? -ne 0 ]; then
+				echo "Failed to retrieve $file, exiting"
+				exit 1
+			fi
+		done
 	fi
-
-	# temporarily remove *test* until upstream build is updated and not staging test material
-	rm -rf *test*
 
 	jar_files=`ls`
 	jar_file_array=(${jar_files//\\n/ })
@@ -171,12 +181,14 @@ getBinaryOpenjdk()
 				mv $jar_dir_name j2sdk-image
 			elif [[ "$jar_dir_name" =~ jre*  &&  "$jar_dir_name" != "j2jre-image" ]]; then
 				mv $jar_dir_name j2jre-image
+			# if native test libs folder is available, mv it under native-test-libs
+			elif [[ "$jar_dir_name"  =~ native-test-libs*  &&  "$jar_dir_name" != "native-test-libs" ]]; then
+				mv $jar_dir_name native-test-libs
 			#The following only needed if openj9 has a different image name convention
-			elif [[ "$jar_dir_name" != "j2sdk-image" ]]; then
+			elif [[ "$jar_dir_name" != "j2sdk-image"  &&  "$jar_dir_name" != "native-test-libs" ]]; then
 				mv $jar_dir_name j2sdk-image
 			fi
 		done
-		
 	chmod -R 755 j2sdk-image
 }
 
