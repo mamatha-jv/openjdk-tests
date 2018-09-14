@@ -15,7 +15,27 @@
 <playlist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../TestConfig/playlist.xsd">
 	<test>
 		<testCaseName>hbase_test</testCaseName>
-	<command>docker run --rm -v $(JDK_HOME):/java  adoptopenjdk-hbase-test:latest ; \
+	<command>docker run -v $(JDK_HOME):/java --name hbase-test adoptopenjdk-hbase-test:latest; \
+			 docker cp hbase-test:/hbase/hbase-backup/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-client/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-common/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-endpoint/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-examples/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-hadoop-compat/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-hadoop2-compat/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-http/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-it/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-mapreduce/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-metrics-api/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-metrics/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-procedure/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-replication/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-rest/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-rsgroup/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-server/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-thrift/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker cp hbase-test:/hbase/hbase-zookeeper/target/surefire-reports $(REPORTDIR)/external_test_reports; \
+			 docker rm hbase-test; \
 		$(TEST_STATUS)</command>
 		<subsets>
 			<subset>SE80</subset>
@@ -29,3 +49,27 @@
 		</groups>
 	</test>
 </playlist>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
