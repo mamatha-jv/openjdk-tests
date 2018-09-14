@@ -42,14 +42,14 @@ RUN apt-get update \
 	vim \
 	wget
 
-#Install Gradle
-RUN mkdir -p /usr/share/gradle \
-         && cd /usr/share/gradle \
-         && wget -q https://services.gradle.org/distributions/gradle-4.5-bin.zip \
-         && unzip -qq gradle-4.5-bin.zip \
-         && rm -rf gradle-4.5-bin.zip \
-         && ln -s /usr/share/gradle/gradle-4.5/bin/gradle /usr/bin/gradle \
-         && cd /
+# Install Maven
+RUN mkdir -p /usr/share/maven \
+	&& cd /usr/share/maven \
+	&& wget --no-check-certificate --no-cookies https://archive.apache.org/dist/maven/maven-3/3.5.3/binaries/apache-maven-3.5.3-bin.zip \
+	&& unzip apache-maven-3.5.3-bin.zip \
+	&& rm -rf apache-maven-3.5.3-bin.zip \
+	&& ln -s /usr/share/maven/apache-maven-3.5.3/bin/mvn /usr/bin/mvn \
+	&& cd /
 
 VOLUME ["/java"]
 ENV JAVA_HOME=/java \
