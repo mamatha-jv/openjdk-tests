@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+#      https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -137,24 +137,31 @@ getBinaryOpenjdk()
 		fi
 	elif [ "$SDK_RESOURCE" == "nightly" ] || [ "$SDK_RESOURCE" == "releases" ]; then
 		os=${PLATFORM#*_}
-		arch=${PLATFORM%_*}
+		os=${os%_largeHeap}
+		arch=${PLATFORM%%_*}
 		tempJDK_VERSION="${JDK_VERSION%?}"
 		OPENJDK_VERSION="openjdk${tempJDK_VERSION:2}"
 		# older bash doesn't support negative offset
 		# OPENJDK_VERSION="openjdk${JDK_VERSION:2:-1}"
-		download_url="https://api.adoptopenjdk.net/v2/binary/${SDK_RESOURCE}/${OPENJDK_VERSION}?openjdk_impl=${JDK_IMPL}&os=${os}&arch=${arch}&release=${RELEASES}&type=${TYPE}"
+		heap_size="normal"
+		if [[ $PLATFORM = *"largeHeap"* ]]; then
+			heap_size="large"
+		fi
+		download_url="https://api.adoptopenjdk.net/v2/binary/${SDK_RESOURCE}/${OPENJDK_VERSION}?openjdk_impl=${JDK_IMPL}&os=${os}&arch=${arch}&release=${RELEASES}&type=${TYPE}&heap_size=${heap_size}"
 	else
 		download_url=""
 		echo "--sdkdir is set to $SDK_RESOURCE. Therefore, skip download jdk binary"
 	fi
 	
-	if  [ "${download_url}" != "" ]; then
+	if [ "${download_url}" != "" ]; then
 		for file in $download_url
 		do
 			echo "curl -OLJks ${curl_options} $file"
 			curl -OLJks ${curl_options} $file
 			if [ $? -ne 0 ]; then
-				echo "Failed to retrieve $file, exiting"
+				echo "Failed to retrieve $file, exiting. This is what we received of the file and MD5 sum:"
+				ls -ld $file
+				md5sum $file
 				exit 1
 			fi
 		done
@@ -177,10 +184,10 @@ getBinaryOpenjdk()
 	for jar_dir in "${jar_dir_array[@]}"
 		do
 			jar_dir_name=${jar_dir%?}
-			if [[ "$jar_dir_name" =~ jdk*  &&  "$jar_dir_name" != "j2sdk-image" ]]; then
-				mv $jar_dir_name j2sdk-image
-			elif [[ "$jar_dir_name" =~ jre*  &&  "$jar_dir_name" != "j2jre-image" ]]; then
+			if [[ "$jar_dir_name" =~ jre*  &&  "$jar_dir_name" != "j2jre-image" ]]; then
 				mv $jar_dir_name j2jre-image
+			elif [[ "$jar_dir_name" =~ jdk*  &&  "$jar_dir_name" != "j2sdk-image" ]]; then
+				mv $jar_dir_name j2sdk-image
 			# if native test libs folder is available, mv it under native-test-libs
 			elif [[ "$jar_dir_name"  =~ native-test-libs*  &&  "$jar_dir_name" != "native-test-libs" ]]; then
 				mv $jar_dir_name native-test-libs

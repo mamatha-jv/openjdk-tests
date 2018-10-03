@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+#      https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -121,30 +121,6 @@
 		<impls>
 			<impl>hotspot</impl>
 		</impls>
-	</test>
-	<test>
-		<testCaseName>hotspot_jre_SE100</testCaseName>
-		<command>$(JAVA_COMMAND) -Xmx512m -jar $(Q)$(TEST_RESROOT)$(D)jtreg$(D)lib$(D)jtreg.jar$(Q) \
-	$(JTREG_BASIC_OPTIONS) -vmoptions:$(Q)-Xmx512m $(JVM_OPTIONS)$(Q) \
-	-w $(Q)$(TEST_RESROOT)$(D)work$(Q) \
-	-r $(Q)$(TEST_RESROOT)$(D)report$(Q) \
-	-jdk:$(Q)$(JDK_HOME)$(Q) \
-	-exclude:$(Q)$(TEST_RESROOT)$(D)ProblemList_$(JVM_VERSION).txt$(Q) \
-	$(Q)$(JTREG_HOTSPOT_TEST_DIR):jre$(Q); \
-	$(TEST_STATUS)</command>
-		<subsets>
-			<subset>SE100</subset>
-		</subsets>
-		<levels>
-			<level>extended</level>
-		</levels>
-		<groups>
-			<group>openjdk</group>
-		</groups>
-		<impls>
-			<impl>hotspot</impl>
-		</impls>
-		<disabled>https://github.com/AdoptOpenJDK/openjdk-tests/issues/228</disabled>
 	</test>
 	<test>
 		<testCaseName>jdk_awt</testCaseName>
@@ -268,6 +244,7 @@
 		</groups>
 	</test>
 		<test>
+		<!-- this is only for jre jdk test, jdk11 build do not have jre jdk yet, disalbe for jdk11 -->
 		<testCaseName>jdk_math_jre</testCaseName>
 		<command>$(JAVA_COMMAND) -Xmx512m -jar $(Q)$(TEST_RESROOT)$(D)jtreg$(D)lib$(D)jtreg.jar$(Q) \
 	$(JTREG_BASIC_OPTIONS)  -vmoptions:$(Q)-Xmx512m $(JVM_OPTIONS)$(Q) \
@@ -283,7 +260,6 @@
 			<subset>SE80</subset>
 			<subset>SE90</subset>
 			<subset>SE100</subset>
-			<subset>SE110</subset>
 		</subsets>
 		<levels>
 			<level>sanity</level>

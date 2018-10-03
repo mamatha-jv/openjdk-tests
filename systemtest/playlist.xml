@@ -49,6 +49,7 @@
 		</groups>
 	</test>
 	
+	<!-- Temporarily exclude from Linux aarch64 for: https://github.com/eclipse/openj9/issues/3065 -->
 	<test>
 		<testCaseName>DirectByteBufferLoadTest</testCaseName>
 		<variations>
@@ -68,6 +69,7 @@
 		<groups>
 			<group>system</group>
 		</groups>
+		<platformRequirements>^arch.arm</platformRequirements>
 	</test>
 	
 	<test>
@@ -91,6 +93,7 @@
 		</groups>
 	</test>
 	
+	<!-- Temporarily exclude from aarch64 linux for: https://github.com/eclipse/openj9/issues/3066 -->
 	<test>
 		<testCaseName>LockingLoadTest</testCaseName>
 		<variations>
@@ -110,8 +113,10 @@
 		<groups>
 			<group>system</group>
 		</groups>
+		<platformRequirements>^arch.arm</platformRequirements>
 	</test>
 	
+	<!-- Exclude from JDK11 due to : https://github.com/AdoptOpenJDK/openjdk-systemtest/issues/178 -->
 	<test>
 		<testCaseName>MathLoadTest_all</testCaseName>
 		<variations>
@@ -131,6 +136,11 @@
 		<groups>
 			<group>system</group>
 		</groups>
+		<subsets>
+			<subset>SE80</subset>
+			<subset>SE90</subset>
+			<subset>SE100</subset>
+		</subsets>
 	</test>
 	
 	<test>
@@ -155,6 +165,7 @@
 		</groups>
 	</test>
 	
+	<!-- Exclude from JDK11 due to : https://github.com/AdoptOpenJDK/openjdk-systemtest/issues/178 -->
 	<test>
 		<testCaseName>MathLoadTest_bigdecimal</testCaseName>
 		<variations>
@@ -175,6 +186,11 @@
 		<groups>
 			<group>system</group>
 		</groups>
+		<subsets>
+			<subset>SE80</subset>
+			<subset>SE90</subset>
+			<subset>SE100</subset>
+		</subsets>
 	</test>
 	
 	<test>
@@ -243,6 +259,7 @@
 		<disabled>AdoptOpenJDK/openjdk-systemtest/issues/64</disabled>
 	</test>
 	
+	<!-- Temporarily exclude from Linux aarch64 for: https://github.com/eclipse/openj9/issues/3065 -->
 	<test>
 		<testCaseName>NioLoadTest</testCaseName>
 		<variations>
@@ -262,6 +279,7 @@
 		<groups>
 			<group>system</group>
 		</groups>
+		<platformRequirements>^arch.arm</platformRequirements>
 	</test>
 	
 	<test>
@@ -2005,6 +2023,8 @@
 			<group>system</group>
 		</groups>
 	</test>
+	
+	<!-- Exclude this test from JDK10 due to : https://github.com/AdoptOpenJDK/openjdk-systemtest/issues/176 -->
 	<test>
 		<testCaseName>ExplicitModulesTest</testCaseName>
 		<variations>
@@ -2020,7 +2040,6 @@
 	$(TEST_STATUS)</command> 
 		<subsets>
 			<subset>SE90</subset>
-			<subset>SE100</subset>
 		</subsets>
 		<levels>
 			<level>sanity</level>
